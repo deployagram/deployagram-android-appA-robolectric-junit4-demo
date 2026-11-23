@@ -10,6 +10,8 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withHint
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import com.deployagram.junit4.DeployagramRule
+import com.deployagram.mockwebserver.RecordingDispatcher
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -34,6 +36,9 @@ import java.util.concurrent.TimeUnit
 @RunWith(RobolectricTestRunner::class)
 class LoadConfigButtonTest {
 
+    @get:Rule
+    val deployagram = DeployagramRule()
+
     private val defaultBookOverflowUrl = BookOverflowConfig.baseUrl
     private val defaultAliceMessagerUrl = AliceMessagerConfig.baseUrl
     private lateinit var bookOverflow: MockWebServer
@@ -48,12 +53,16 @@ class LoadConfigButtonTest {
 
         bookOverflowAnswers = SuggestionAnswers()
         bookOverflow = MockWebServer()
-        bookOverflow.dispatcher = bookOverflowAnswers
+        bookOverflow.dispatcher = RecordingDispatcher(
+            bookOverflowAnswers,
+            "AliceA",
+            "ORG_ctm_01m1j08sx96792d2tysabvyadp:BookOverflow",
+        )
         bookOverflow.start()
         BookOverflowConfig.baseUrl = bookOverflow.url("/").toString().trimEnd('/')
 
         aliceMessager = MockWebServer()
-        aliceMessager.dispatcher = AliceMessagerAnswers()
+        aliceMessager.dispatcher = RecordingDispatcher(AliceMessagerAnswers(), "AliceA", "AliceMessager")
         aliceMessager.start()
         AliceMessagerConfig.baseUrl = aliceMessager.url("/").toString().trimEnd('/')
     }

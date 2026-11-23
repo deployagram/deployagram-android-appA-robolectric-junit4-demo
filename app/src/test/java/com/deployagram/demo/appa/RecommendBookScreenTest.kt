@@ -10,6 +10,8 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withHint
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import com.deployagram.junit4.DeployagramRule
+import com.deployagram.mockwebserver.RecordingDispatcher
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -17,6 +19,7 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.hamcrest.CoreMatchers.containsString
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -34,6 +37,9 @@ import java.util.concurrent.TimeUnit
 @RunWith(RobolectricTestRunner::class)
 class RecommendBookScreenTest {
 
+    @get:Rule
+    val deployagram = DeployagramRule()
+
     private val defaultBookOverflowUrl = BookOverflowConfig.baseUrl
     private lateinit var bookOverflow: MockWebServer
     private lateinit var bookOverflowAnswers: SuggestionAnswers
@@ -45,7 +51,12 @@ class RecommendBookScreenTest {
         bookOverflow = MockWebServer()
         bookOverflowAnswers = SuggestionAnswers()
         enteredEmail = "reader-${UUID.randomUUID()}@example.com"
-        bookOverflow.dispatcher = bookOverflowAnswers
+        // Deployagram records the request AppA sends, and the answer BookOverflow gives.
+        bookOverflow.dispatcher = RecordingDispatcher(
+            bookOverflowAnswers,
+            "AliceA",
+            "ORG_ctm_01m1j08sx96792d2tysabvyadp:BookOverflow",
+        )
         bookOverflow.start()
         BookOverflowConfig.baseUrl = bookOverflow.url("/").toString().trimEnd('/')
     }

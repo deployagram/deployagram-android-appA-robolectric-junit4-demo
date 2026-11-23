@@ -1,6 +1,6 @@
 # Deployagram Android AppA Robolectric JUnit 4 Demo
 
-The same small Android app as [`deployagram-android-appA-kotest-demo`](../deployagram-android-appA-kotest-demo): AppA has one
+The same small Android app as [`deployagram-android-appA-emulator-kotest-demo`](../deployagram-android-appA-emulator-kotest-demo): AppA has one
 screen. The user types an email and presses **Recommend book**, and the app asks BookOverflow for a book suggestion.
 
 This version tests the screen on the JVM, with **Robolectric** and **JUnit 4**. It needs no emulator, so it runs on any
@@ -15,6 +15,8 @@ AppA calls `GET /BookOverflow/suggestion?email=<email>` and shows the answer:
 | BookOverflow suggests a book                   | The book's name, edition, format and authors                 |
 | Email is blank, and BookOverflow refuses (400) | `You must enter a valid email!`                              |
 | Any other failure                              | `Sorry, no suggestion right now (<reason>)`                  |
+| Load Config, after a suggestion                | AliceMessager's reply, `World` for `Hello` (sent once a book is recommended) |
+| Load Config, with no suggestion yet            | AliceMessager's reply, `Is someone there?` for an empty payload |
 
 ## What it is for
 
@@ -50,4 +52,35 @@ app/src/main/java/com/deployagram/demo/appa/
     BookOverflowConfig.kt    where BookOverflow is (the test changes it)
 app/src/test/java/com/deployagram/demo/appa/
     RecommendBookScreenTest.kt   the two JVM tests, and the BookOverflow double
+    LoadConfigButtonTest.kt      the two JVM tests of Load Config, and the AliceMessager double
 ```
+
+## Deployagram instrumentation
+
+The tests are instrumented with two Deployagram packages:
+
+* `deployagram-junit4`: `DeployagramRule`, a JUnit 4 rule that ends each test's sequence diagram in the Collector. It is
+  declared on the test class, because Robolectric runs on the JVM and has no run-level listener to register.
+* `deployagram-mockwebserver`: `RecordingDispatcher`, which wraps the BookOverflow double. It records the request AppA
+  sends, and the answer BookOverflow gives.
+
+The Collector runs on the host, and the tests reach it at `http://localhost:1152`, so no emulator address is needed. The
+caller and callee are named as in the Java repo: `AliceA` calls `ORG_ctm_01m1j08sx96792d2tysabvyadp:BookOverflow`.
+
+```
+  RecommendBookScreenTest (Robolectric) ──► AppA ──► RecordingDispatcher ──► BookOverflow double
+                                                             │
+                                                             ▼
+                                               Collector on localhost:1152
+```
+
+### Running
+
+The Deployagram packages are on Maven Central, so the build needs no local install. Start the Collector, with the licence
+it needs, and run the tests:
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+Each test's entries are under its own marker, `RecommendBookScreenTest.<test name>`.
